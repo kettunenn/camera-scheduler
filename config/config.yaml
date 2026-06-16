@@ -1,0 +1,49 @@
+storage:
+  base_path: "/data/ecoready/captures"   # override with env CAPTURE_BASE_PATH
+  # Directory structure: base_path/YYYY-MM-DD/<camera_id>_<timestamp>.jpg
+
+cameras:
+  - id: "cam_growbed_a1"
+    label: "Grow Bed A1"
+    ip: "192.168.1.101"
+    user: "admin"
+    password: "changeme"
+    active: true
+
+  - id: "cam_growbed_a2"
+    label: "Grow Bed A2"
+    ip: "192.168.1.102"
+    user: "admin"
+    password: "changeme"
+    active: true
+
+  # Add more cameras here following the same pattern
+
+schedule:
+  # Cron-style: minute hour day_of_month month day_of_week
+  # Default: top of every hour
+  cron: "0 * * * *"
+
+capture:
+  stream: "stream1"          # stream1 = full res, stream2 = 720p sub-stream
+  jpeg_quality: 2            # ffmpeg -q:v, 1=best, 31=worst. 2 is visually lossless.
+  timeout_seconds: 15        # per-camera ffmpeg timeout
+  retries: 2                 # attempts before marking as failed
+  retry_delay_seconds: 10
+
+alerts:
+  enabled: true
+  smtp_host: "smtp.gmail.com"
+  smtp_port: 587
+  smtp_user: "your@email.com"
+  smtp_password: "your_app_password"   # use an app password, not your main password
+  from_addr: "your@email.com"
+  to_addrs:
+    - "recipient@email.com"
+  # Alert is sent when a camera fails all retries
+  # Cooldown: won't re-alert for the same camera within this many minutes
+  alert_cooldown_minutes: 60
+
+ui:
+  port: 8501
+  title: "ECO Ready — Imaging Dashboard"

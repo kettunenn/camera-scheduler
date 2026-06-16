@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ECO Ready — Imaging Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f5f2;
+      --surface: #ffffff;
+      --border: #e0e0d8;
+      --accent: #2d6a4f;
+      --accent-light: #e8f5ee;
+      --text: #1a1a1a;
+      --text-muted: #6b6b6b;
+      --danger: #c0392b;
+      --radius: 8px;
+      --shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Layout ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo { font-weight: 700; font-size: 1.1rem; color: var(--accent); }
+    .logo span { font-weight: 400; color: var(--text-muted); font-size: 0.9rem; margin-left: 8px; }
+
+    #status-bar {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 16px;
+    }
+
+    nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      gap: 4px;
+    }
+
+    nav button {
+      background: none;
+      border: none;
+      padding: 12px 16px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+
+    nav button.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      font-weight: 600;
+    }
+
+    main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── Cards / Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .card-img {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      display: block;
+      background: var(--bg);
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .card-img:hover { opacity: 0.9; }
+
+    .card-body { padding: 12px; }
+
+    .card-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
+
+    .card-meta {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: var(--text);
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+
+    .btn:hover { background: var(--bg); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .btn-primary:hover { background: #245a42; }
+
+    /* ── Filters ── */
+    .filters {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 4px;
+    }
+
+    .filter-group { display: flex; flex-direction: column; gap: 4px; }
+
+    .filter-group label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .filter-group select,
+    .filter-group input {
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.88rem;
+      background: var(--surface);
+      color: var(--text);
+      min-width: 150px;
+    }
+
+    /* ── Section headers ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      margin-top: 20px;
+    }
+
+    .section-header h2 { font-size: 1rem; font-weight: 600; }
+    .section-header span { font-size: 0.82rem; color: var(--text-muted); }
+
+    /* ── Empty / loading states ── */
+    .empty {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Lightbox ── */
+    #lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #lightbox.open { display: flex; }
+
+    #lightbox img {
+      max-width: 90vw;
+      max-height: 82vh;
+      border-radius: var(--radius);
+      object-fit: contain;
+    }
+
+    #lightbox-meta {
+      color: rgba(255,255,255,0.7);
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    #lightbox-close {
+      position: absolute;
+      top: 16px; right: 20px;
+      color: white;
+      font-size: 1.8rem;
+      cursor: pointer;
+      line-height: 1;
+      opacity: 0.7;
+    }
+
+    #lightbox-close:hover { opacity: 1; }
+
+    .btn-success {
+      background: #27ae60;
+      color: white;
+      border-color: #27ae60;
+    }
+
+    .btn-success:hover { background: #219a52; }
+
+    .btn-warning {
+      background: #e67e22;
+      color: white;
+      border-color: #e67e22;
+    }
+
+    .capture-btn {
+      width: 100%;
+      justify-content: center;
+      margin-top: 6px;
+      padding: 7px;
+    }
+
+    .capturing {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    /* ── Settings page ── */
+    .settings-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      max-width: 560px;
+      margin-bottom: 20px;
+    }
+
+    .settings-section h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .settings-section p {
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+
+    .cron-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .cron-field { display: flex; flex-direction: column; gap: 4px; }
+
+    .cron-field label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .cron-field input {
+      padding: 7px 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-family: monospace;
+      text-align: center;
+      width: 100%;
+    }
+
+    .cron-preview {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      font-family: monospace;
+      background: var(--bg);
+      padding: 8px 12px;
+      border-radius: var(--radius);
+    }
+
+    .preset-btns {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .alert {
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      font-size: 0.83rem;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .alert-success { background: var(--accent-light); color: var(--accent); }
+    .alert-error   { background: #fdecea; color: var(--danger); }
+    .export-form {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      max-width: 520px;
+    }
+
+    .export-form h2 { margin-bottom: 20px; font-size: 1rem; }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .form-row .filter-group { flex: 1; min-width: 140px; }
+
+    .export-info {
+      background: var(--accent-light);
+      border-radius: var(--radius);
+      padding: 12px;
+      font-size: 0.83rem;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    /* ── Stats pills ── */
+    .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .stat-value { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🌱 ECO Ready <span>Imaging Dashboard</span></div>
+  <div id="status-bar">
+    <span id="stat-images">— images</span>
+    <span id="stat-storage">— MB</span>
+    <span id="stat-days">— days</span>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showPage('latest', this)">Latest</button>
+  <button onclick="showPage('browse', this)">Browse</button>
+  <button onclick="showPage('export', this)">Export</button>
+  <button onclick="showPage('settings', this)">Settings</button>
+</nav>
+
+<main>
+
+  <!-- ── Latest ── -->
+  <div id="page-latest" class="page active">
+    <div class="section-header">
+      <h2>Most recent capture per camera</h2>
+      <button class="btn btn-primary" onclick="loadLatest()">↻ Refresh</button>
+    </div>
+    <div id="latest-grid" class="grid">
+      <div class="empty"><span class="spinner"></span></div>
+    </div>
+  </div>
+
+  <!-- ── Browse ── -->
+  <div id="page-browse" class="page">
+    <div class="filters">
+      <div class="filter-group">
+        <label>Date</label>
+        <select id="browse-date" onchange="loadBrowse()">
+          <option>Loading...</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Camera</label>
+        <select id="browse-camera" onchange="loadBrowse()">
+          <option value="">All cameras</option>
+        </select>
+      </div>
+    </div>
+    <div class="section-header">
+      <h2>Captures</h2>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="browse-count" style="font-size:0.82rem;color:var(--text-muted)"></span>
+        <button class="btn btn-primary" id="browse-export-btn" onclick="triggerBrowseExport()" style="display:none">⬇ Export ZIP</button>
+      </div>
+    </div>
+    <div id="browse-grid" class="grid">
+      <div class="empty">Select a date above</div>
+    </div>
+  </div>
+
+  <!-- ── Export ── -->
+  <div id="page-export" class="page">
+    <div class="export-form">
+      <h2>Export images</h2>
+      <div class="export-info">
+        Downloads a ZIP file containing all images in the selected range, plus a <strong>manifest.csv</strong> with metadata.
+      </div>
+      <div class="form-row">
+        <div class="filter-group">
+          <label>From</label>
+          <input type="date" id="export-from" />
+        </div>
+        <div class="filter-group">
+          <label>To</label>
+          <input type="date" id="export-to" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="filter-group">
+          <label>Camera</label>
+          <select id="export-camera">
+            <option value="">All cameras</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="triggerExport()" style="width:100%;justify-content:center;padding:10px">
+        ⬇ Download ZIP
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Settings ── -->
+  <div id="page-settings" class="page">
+
+    <div class="settings-section">
+      <h2>Capture Schedule</h2>
+      <p>Set when images are automatically captured from all active cameras. Uses standard cron syntax.</p>
+
+      <div class="preset-btns">
+        <button class="btn" onclick="applyPreset('0 * * * *')">Every hour</button>
+        <button class="btn" onclick="applyPreset('*/30 * * * *')">Every 30 min</button>
+        <button class="btn" onclick="applyPreset('0 */2 * * *')">Every 2 hours</button>
+        <button class="btn" onclick="applyPreset('0 8-20 * * *')">Hourly 08–20</button>
+        <button class="btn" onclick="applyPreset('0 6,12,18 * * *')">3× daily</button>
+      </div>
+
+      <div class="cron-grid">
+        <div class="cron-field">
+          <label>Minute</label>
+          <input type="text" id="cron-minute" value="0" oninput="updateCronPreview()" />
+        </div>
+        <div class="cron-field">
+          <label>Hour</label>
+          <input type="text" id="cron-hour" value="*" oninput="updateCronPreview()" />
+        </div>
+        <div class="cron-field">
+          <label>Day (month)</label>
+          <input type="text" id="cron-dom" value="*" oninput="updateCronPreview()" />
+        </div>
+        <div class="cron-field">
+          <label>Month</label>
+          <input type="text" id="cron-month" value="*" oninput="updateCronPreview()" />
+        </div>
+        <div class="cron-field">
+          <label>Day (week)</label>
+          <input type="text" id="cron-dow" value="*" oninput="updateCronPreview()" />
+        </div>
+      </div>
+
+      <div class="cron-preview" id="cron-preview">0 * * * *</div>
+
+      <button class="btn btn-primary" onclick="saveSchedule()" style="width:100%;justify-content:center;padding:10px">
+        Save Schedule
+      </button>
+
+      <div class="alert alert-success" id="schedule-success"></div>
+      <div class="alert alert-error"   id="schedule-error"></div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- Lightbox -->
+<div id="lightbox" onclick="closeLightbox()">
+  <span id="lightbox-close">✕</span>
+  <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()" />
+  <div id="lightbox-meta"></div>
+</div>
+
+<script>
+  const API = '';  // same origin
+
+  // ── Navigation ──────────────────────────────────────────────────────────
+
+  function showPage(name, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    btn.classList.add('active');
+    if (name === 'latest') loadLatest();
+    if (name === 'browse') initBrowse();
+    if (name === 'export') initExport();
+    if (name === 'settings') initSettings();
+  }
+
+  // ── Status bar ──────────────────────────────────────────────────────────
+
+  async function loadStatus() {
+    try {
+      const r = await fetch(API + '/api/status');
+      const d = await r.json();
+      document.getElementById('stat-images').textContent = d.total_images + ' images';
+      document.getElementById('stat-storage').textContent = d.storage_mb + ' MB used';
+      document.getElementById('stat-days').textContent = d.days_with_data + ' days of data';
+    } catch(e) {
+      document.getElementById('stat-images').textContent = 'API unreachable';
+    }
+  }
+
+  // ── Latest page ─────────────────────────────────────────────────────────
+
+  async function loadLatest() {
+    const grid = document.getElementById('latest-grid');
+    grid.innerHTML = '<div class="empty"><span class="spinner"></span></div>';
+    try {
+      const r = await fetch(API + '/api/images/latest');
+      const cameras = await r.json();
+      if (!cameras.length) {
+        grid.innerHTML = '<div class="empty">No cameras configured.</div>';
+        return;
+      }
+      grid.innerHTML = cameras.map(cam => {
+        if (!cam.latest) return `
+          <div class="card">
+            <div style="aspect-ratio:16/9;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.85rem">No captures yet</div>
+            <div class="card-body">
+              <div class="card-title">${cam.camera_label}</div>
+              <div class="card-meta">—</div>
+              <button class="btn btn-primary capture-btn" onclick="triggerCapture('${cam.camera_id}', this)">
+                📷 Capture Now
+              </button>
+            </div>
+          </div>`;
+        const ts = cam.latest.captured_at ? formatTs(cam.latest.captured_at) : cam.latest.filename;
+        return `
+          <div class="card">
+            <img class="card-img" src="${API}${cam.latest.url}" alt="${cam.camera_label}"
+              onclick="openLightbox('${API}${cam.latest.url}', '${cam.camera_label} · ${ts}')" />
+            <div class="card-body">
+              <div class="card-title">${cam.camera_label}</div>
+              <div class="card-meta">${ts} · ${cam.latest.size_kb} KB</div>
+              <div style="display:flex;gap:6px;margin-top:6px">
+                <a class="btn" href="${API}${cam.latest.url}" download="${cam.latest.filename}" style="flex:1;justify-content:center">⬇ Download</a>
+                <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="triggerCapture('${cam.camera_id}', this)">
+                  📷 Capture
+                </button>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    } catch(e) {
+      grid.innerHTML = '<div class="empty">Failed to load. Is the API running?</div>';
+    }
+  }
+
+  async function triggerCapture(cameraId, btn) {
+    const original = btn.innerHTML;
+    btn.classList.add('capturing');
+    btn.innerHTML = '<span class="spinner"></span> Capturing...';
+    try {
+      const r = await fetch(API + '/api/capture/' + cameraId, { method: 'POST' });
+      if (!r.ok) {
+        const err = await r.json();
+        throw new Error(err.detail || 'Unknown error');
+      }
+      btn.innerHTML = '✓ Done';
+      btn.classList.remove('capturing');
+      // Reload latest after a short delay to allow ffmpeg to finish
+      setTimeout(() => {
+        loadLatest();
+        loadStatus();
+      }, 4000);
+    } catch(e) {
+      btn.innerHTML = '✗ Failed';
+      btn.classList.remove('capturing');
+      setTimeout(() => { btn.innerHTML = original; }, 3000);
+      console.error('Capture failed:', e.message);
+    }
+  }
+
+  // ── Browse page ─────────────────────────────────────────────────────────
+
+  async function initBrowse() {
+    const dateEl = document.getElementById('browse-date');
+    const camEl  = document.getElementById('browse-camera');
+
+    // Load dates
+    const datesR = await fetch(API + '/api/dates');
+    const dates  = await datesR.json();
+    dateEl.innerHTML = dates.map(d => `<option value="${d}">${formatDate(d)}</option>`).join('');
+
+    // Load cameras
+    await populateCameraSelect(camEl);
+
+    if (dates.length) loadBrowse();
+  }
+
+  async function loadBrowse() {
+    const date     = document.getElementById('browse-date').value;
+    const cameraId = document.getElementById('browse-camera').value;
+    const grid     = document.getElementById('browse-grid');
+    const countEl  = document.getElementById('browse-count');
+    const exportBtn= document.getElementById('browse-export-btn');
+
+    if (!date) return;
+    grid.innerHTML = '<div class="empty"><span class="spinner"></span></div>';
+
+    const params = new URLSearchParams({ date });
+    if (cameraId) params.set('camera_id', cameraId);
+
+    const r = await fetch(API + '/api/images?' + params);
+    const images = await r.json();
+
+    countEl.textContent = images.length + ' image(s)';
+    exportBtn.style.display = images.length ? 'inline-flex' : 'none';
+
+    if (!images.length) {
+      grid.innerHTML = '<div class="empty">No captures for this selection.</div>';
+      return;
+    }
+
+    grid.innerHTML = images.map(img => {
+      const ts = img.captured_at ? formatTs(img.captured_at) : img.filename;
+      return `
+        <div class="card">
+          <img class="card-img" src="${API}${img.url}" alt="${img.camera_label}"
+            onclick="openLightbox('${API}${img.url}', '${img.camera_label} · ${ts}')" />
+          <div class="card-body">
+            <div class="card-title">${img.camera_label}</div>
+            <div class="card-meta">${ts} · ${img.size_kb} KB</div>
+            <a class="btn" href="${API}${img.url}" download="${img.filename}">⬇ Download</a>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function triggerBrowseExport() {
+    const date     = document.getElementById('browse-date').value;
+    const cameraId = document.getElementById('browse-camera').value;
+    const params   = new URLSearchParams({ date_from: date, date_to: date });
+    if (cameraId) params.set('camera_id', cameraId);
+    window.location = API + '/api/export?' + params;
+  }
+
+  // ── Export page ─────────────────────────────────────────────────────────
+
+  async function initExport() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('export-from').value = today;
+    document.getElementById('export-to').value   = today;
+    await populateCameraSelect(document.getElementById('export-camera'));
+  }
+
+  function triggerExport() {
+    const from     = document.getElementById('export-from').value;
+    const to       = document.getElementById('export-to').value;
+    const cameraId = document.getElementById('export-camera').value;
+    if (!from || !to) { alert('Please select a date range.'); return; }
+    const params = new URLSearchParams({ date_from: from, date_to: to });
+    if (cameraId) params.set('camera_id', cameraId);
+    window.location = API + '/api/export?' + params;
+  }
+
+  // ── Lightbox ─────────────────────────────────────────────────────────────
+
+  function openLightbox(url, meta) {
+    document.getElementById('lightbox-img').src = url;
+    document.getElementById('lightbox-meta').textContent = meta;
+    document.getElementById('lightbox').classList.add('open');
+  }
+
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+    document.getElementById('lightbox-img').src = '';
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  async function populateCameraSelect(el) {
+    const r = await fetch(API + '/api/cameras');
+    const cameras = await r.json();
+    const existing = el.querySelector('option[value=""]');
+    el.innerHTML = '';
+    if (existing) el.appendChild(existing);
+    cameras.filter(c => c.active).forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.label;
+      el.appendChild(opt);
+    });
+  }
+
+  function formatTs(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
+        + ' ' + d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+    } catch { return iso; }
+  }
+
+  function formatDate(str) {
+    try {
+      return new Date(str + 'T12:00:00').toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    } catch { return str; }
+  }
+
+  // ── Settings page ────────────────────────────────────────────────────────
+
+  async function initSettings() {
+    try {
+      const r = await fetch(API + '/api/schedule');
+      const d = await r.json();
+      applyPreset(d.cron);
+    } catch(e) {
+      console.error('Failed to load schedule:', e);
+    }
+  }
+
+  function applyPreset(cron) {
+    const parts = cron.trim().split(/\s+/);
+    if (parts.length !== 5) return;
+    document.getElementById('cron-minute').value = parts[0];
+    document.getElementById('cron-hour').value   = parts[1];
+    document.getElementById('cron-dom').value    = parts[2];
+    document.getElementById('cron-month').value  = parts[3];
+    document.getElementById('cron-dow').value    = parts[4];
+    updateCronPreview();
+  }
+
+  function updateCronPreview() {
+    const cron = getCronString();
+    document.getElementById('cron-preview').textContent = cron;
+  }
+
+  function getCronString() {
+    const m  = document.getElementById('cron-minute').value.trim() || '*';
+    const h  = document.getElementById('cron-hour').value.trim()   || '*';
+    const dm = document.getElementById('cron-dom').value.trim()    || '*';
+    const mo = document.getElementById('cron-month').value.trim()  || '*';
+    const dw = document.getElementById('cron-dow').value.trim()    || '*';
+    return `${m} ${h} ${dm} ${mo} ${dw}`;
+  }
+
+  async function saveSchedule() {
+    const cron = getCronString();
+    const successEl = document.getElementById('schedule-success');
+    const errorEl   = document.getElementById('schedule-error');
+    successEl.style.display = 'none';
+    errorEl.style.display   = 'none';
+
+    try {
+      const r = await fetch(API + '/api/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cron }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || 'Failed to save');
+
+      if (d.warning) {
+        errorEl.textContent = '⚠ ' + d.warning;
+        errorEl.style.display = 'block';
+      } else {
+        const count = d.rescheduled?.length ?? 0;
+        successEl.textContent = `✓ Schedule updated to "${cron}" — ${count} camera(s) rescheduled live.`;
+        successEl.style.display = 'block';
+      }
+    } catch(e) {
+      errorEl.textContent = '✗ ' + e.message;
+      errorEl.style.display = 'block';
+    }
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────────────
+
+  loadStatus();
+  loadLatest();
+  setInterval(loadStatus, 60000);
+</script>
+</body>
+</html>

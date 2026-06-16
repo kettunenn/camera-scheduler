@@ -1,0 +1,49 @@
+# =============================================================================
+# ecoready-capture.service
+# Place at: /etc/systemd/system/ecoready-capture.service
+# =============================================================================
+[Unit]
+Description=ECO Ready Camera Capture Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ecoready
+WorkingDirectory=/opt/ecoready-cam
+Environment=CONFIG_PATH=/opt/ecoready-cam/config/config.yaml
+Environment=CAPTURE_BASE_PATH=/data/ecoready/captures
+Environment=JOBSTORE_PATH=/data/ecoready/scheduler.db
+Environment=LOG_PATH=/var/log/ecoready/capture.log
+ExecStart=/opt/ecoready-cam/venv/bin/python -m capture.service
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
+
+
+# =============================================================================
+# ecoready-ui.service
+# Place at: /etc/systemd/system/ecoready-ui.service
+# =============================================================================
+[Unit]
+Description=ECO Ready Imaging Dashboard (Streamlit)
+After=network-online.target
+
+[Service]
+Type=simple
+User=ecoready
+WorkingDirectory=/opt/ecoready-cam
+Environment=CONFIG_PATH=/opt/ecoready-cam/config/config.yaml
+Environment=CAPTURE_BASE_PATH=/data/ecoready/captures
+ExecStart=/opt/ecoready-cam/venv/bin/streamlit run ui/app.py \
+    --server.port=8501 \
+    --server.address=0.0.0.0 \
+    --server.headless=true \
+    --browser.gatherUsageStats=false
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
